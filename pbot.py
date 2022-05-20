@@ -8,7 +8,7 @@ import threading
 import sys
 import json
 
-print()
+
 token = open('token').read().replace('\n', '')
 longpoll = open('longpoll').read().replace('\n', '')
 print('Подключаемся к токену', token, '\b...')
@@ -56,7 +56,7 @@ def read_msg():
             user = msg['peer_id']
             print('Получено от:', user, '\b:', msg['text']) 
             if not msg['text']:
-                print('Пустое сообщение')
+                print('Пустое сообщение от:', user)
                 write_msg('Хватит присылать этот кал', user)
             else:
                 if (msg['text'][0] == '/'):
@@ -84,14 +84,12 @@ def write_msg(msg, *user):
             random_id = get_random_id(),
             peer_id = user)
 
-def user_command(uin, *user):
+def user_command(uin, user = peer):
     """Reads a user command, processes it in accordance with the commands table
     Arguments:
     uin -- Input string (command with arguments) : str
     user -- User vk id : int
     """
-    if not user:
-        user = peer
     uin = uin.split()
     comkey = uin[0].lower()
     command = commands[comkey]
