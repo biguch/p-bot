@@ -1,0 +1,2 @@
+help:send_localized(0, user)
+hello:send_localized(1, user)
