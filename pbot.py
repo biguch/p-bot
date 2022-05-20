@@ -6,7 +6,6 @@ from vk_api.utils import get_random_id
 import traceback
 import threading
 import sys
-import json
 
 
 token = open('token').read().replace('\n', '')
