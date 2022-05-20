@@ -22,8 +22,7 @@ peer = None
 def make_table(tabname):
     """Reads a table
     Arguments:
-    tabname -- table name : str
-    """
+    tabname -- table name : str"""
     print('Читаем таблицу', tabname, '\b...')
     with open(tabname) as tabfile:
         tabfile = tabfile.read().splitlines()
@@ -48,8 +47,7 @@ localization = make_table('localization.txt')
 commands = make_table('commands.txt')
 
 def read_msg():
-    """Reads a message from longpoll and processes it
-    """
+    """Reads a message from longpoll and processes it"""
     for event in vk_longpoll.listen():
         if event.type == VkBotEventType.MESSAGE_NEW:
             msg = event.obj['message']
@@ -62,21 +60,23 @@ def read_msg():
                 if (msg['text'][0] == '/'):
                     user_command(msg['text'][1::], user)
 
-def send_localized(locnum, user):
+def send_localized(locnum, user = -1):
     """Sends a message specified in the localization.txt file.
     locnum -- localization id : int
-    user -- user vk id : int
-    """
+    user -- user vk id : int"""
+    global peer
+    if user == -1:
+        user = peer
     msg = open(localization[locnum], 'r').read()
     write_msg(msg, user)
 
-def write_msg(msg, *user):
+def write_msg(msg, user = -1):
     """Sends message to a user. If no user specified, then sends it to the peer.
     Arguments:
     msg -- Message : str
-    user -- Optional user vk id : int
-    """
-    if not user:
+    user -- Optional user vk id : int"""
+    global peer
+    if user == -1:
         user = peer
     print('Отправлено к:', user, '\b:', msg)
     vk.messages.send(
@@ -84,28 +84,28 @@ def write_msg(msg, *user):
             random_id = get_random_id(),
             peer_id = user)
 
-def user_command(uin, user = peer):
+def user_command(uin, user = -1): 
     """Reads a user command, processes it in accordance with the commands table
     Arguments:
     uin -- Input string (command with arguments) : str
-    user -- User vk id : int
-    """
+    user -- User vk id : int"""
+    if user == -1:
+        user = peer
     uin = uin.split()
     comkey = uin[0].lower()
-    command = commands[comkey]
     try:
+        command = commands[comkey]
         exec(command)
         print('Выполнена команда', command, 'vk id:', user)
     except:
-        print('Не удалось выполнить команду', command, 'vk id:', user)
+        print('Не удалось выполнить команду', comkey, 'vk id:', user)
         write_msg("Дедушка тебя не понимает", user)
         print(traceback.format_exc())
 
 def console_command(uin):
     """ Processes console commands
     Arguments:
-    uin -- Input string (command with arguments) : str
-    """
+    uin -- Input string (command with arguments) : str"""
     global peer
     try:
         com = uin[0]
