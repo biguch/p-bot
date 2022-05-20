@@ -9,15 +9,13 @@ import sys
 import json
 
 print()
-token = open('token').read()
-longpoll = open('longpoll').read()
+token = open('token').read().replace('\n', '')
+longpoll = open('longpoll').read().replace('\n', '')
 print('Подключаемся к токену', token, '\b...')
 vk_session = vk_api.VkApi(token = token)
 vk = vk_session.get_api()
-print('Подключились')
-print('Ищем лонгполл', longpoll, '\b...')
+print('Лонгполлируем группу номер', longpoll, '\b...')
 vk_longpoll = VkBotLongPoll(vk_session, longpoll)
-print('Нашли')
 
 peer = None
 
