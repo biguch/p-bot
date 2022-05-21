@@ -45,6 +45,10 @@ def make_table(tabname):
 localization = make_table('localization.txt')
 commands = make_table('commands.txt')
 
+permissions = open('./diplo/permissions.txt')
+moves = open('./diplo/moves.txt', 'rw')
+
+
 def read_msg():
     """Reads a message from longpoll and processes it"""
     for event in vk_longpoll.listen():
@@ -135,8 +139,32 @@ def console_command(uin):
     except:
         print('АА СТОП ОШИБКА 00000')
         print(traceback.format_exc())
-
-
+        
+def commitMoves(user, *moves):
+    if user in permissions:
+        print(user, 'запросил ходы:', moves)
+        dumpMoves(user, moves)
+    else:
+        print(user, 'нелегально запросил ходы:', moves)
+        
+def dumpMoves(user, moves):
+    print('Сбрасываем ходы в файл moves.txt')
+    users = moves.readlines()
+    for line in users:
+        if line.contains(user):
+            for move in moves:
+                if line.contains(move):
+                    pass
+                    moves.replace(move, '')
+            line += moves
+            break
+         else: 
+            line += user+':'+moves
+    else:
+        print('Все ходы повторяются. Ни один не записан.')
+    print('Записали ходы:', moves, 'в файл moves.txt')
+    moves.writelines(users)
+                    
 def getInput():
     """Reads console input"""
     uin = input().split()
