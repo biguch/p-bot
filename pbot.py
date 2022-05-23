@@ -6,7 +6,7 @@ from vk_api.utils import get_random_id
 import traceback
 import threading
 import sys
-
+import time
 
 token = open('token').read().replace('\n', '')
 longpoll = open('longpoll').read().replace('\n', '')
@@ -15,6 +15,7 @@ vk_session = vk_api.VkApi(token = token)
 vk = vk_session.get_api()
 print('Лонгполлируем группу номер', longpoll, '\b...')
 vk_longpoll = VkBotLongPoll(vk_session, longpoll)
+timeout = 30
 
 peer = None
 
@@ -48,20 +49,50 @@ commands = make_table('commands.txt')
 permissions = open('./diplo/permissions.txt')
 moves = open('./diplo/moves.txt', 'rw')
 
+def connect():
+    
 
 def read_msg():
     """Reads a message from longpoll and processes it"""
-    for event in vk_longpoll.listen():
-        if event.type == VkBotEventType.MESSAGE_NEW:
-            msg = event.obj['message']
-            user = msg['peer_id']
-            print('Получено от:', user, '\b:', msg['text']) 
-            if not msg['text']:
-                print('Пустое сообщение от:', user)
-                write_msg('Хватит присылать этот кал', user)
-            else:
-                if (msg['text'][0] == '/'):
-                    user_command(msg['text'][1::], user)
+    try:
+        for event in vk_longpoll.listen():
+            if event.type == VkBotEventType.MESSAGE_NEW:
+                msg = event.obj['message']
+                user = msg['peer_id']
+                print('Получено от:', user, '\b:', msg['text']) 
+                if not msg['text']:
+                    print('Пустое сообщение от:', user)
+                    write_msg('Хватит присылать этот кал', user)
+                else:
+                    if (msg['text'][0] == '/'):
+                        user_command(msg['text'][1::], user)
+    except socket.timeout:
+        print('Нет связи с сервером. Повторное соединение через %d секунд.', timeout)
+        reconnect()
+
+def check_msg():
+    try:
+        for event in vk_longpoll.check():
+            if event.type == VkBotEventType.MESSAGE_NEW:
+                msg = event.obj['message']
+                user = msg['peer_id']
+                print('Получено от:', user, '\b:', msg['text']) 
+                if not msg['text']:
+                    print('Пустое сообщение от:', user)
+                    write_msg('Хватит присылать этот кал', user)
+                else:
+                    if (msg['text'][0] == '/'):
+                        user_command(msg['text'][1::], user)
+    except socket.timeout:
+        print('Нет связи с сервером. Повторное соединение через %d секунд.', timeout)
+        reconnect()
+
+def reconnect():
+    global timeout
+    timer = time.time()
+    while (time.time() - timer) < timeout:
+        pass
+    check_msg()
 
 def send_localized(locnum, user = -1):
     """Sends a message specified in the localization.txt file.
@@ -128,17 +159,24 @@ def console_command(uin):
             print('Собеседник задан:', peer)
         #Execute user command
         elif com == 'e':
-            print('Executing', uin[1] + '...')
+            print('Выполняем', uin[1] + '...')
             user_command(uin[1])
+        #Force reconnect
+        elif com == 'fr':
+            print('Переподключаемся...')
+            reconnect()
         #Unknown command
         else:
             print('Неизвестная команда')
 
     except SystemExit:
         sys.exit()
-    except:
+    except: navy encircle
         print('АА СТОП ОШИБКА 00000')
         print(traceback.format_exc())
+        
+def receiveMoves(user, *moves):
+    
         
 def commitMoves(user, *moves):
     if user in permissions:
@@ -171,9 +209,9 @@ def getInput():
     console_command(uin)
 
 print('Начинаем работу')
+check_msg()
 inp = threading.Thread(target = read_msg, daemon = True)
 inp.start()
 print('Работаем, братья')
- 
 while 1:
     getInput()
