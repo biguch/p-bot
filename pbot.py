@@ -208,7 +208,7 @@ def dumpMoves(user, moves):
                     moves.replace(move, '')
             line += moves
             break
-         else: 
+        else: 
             line += user+':'+moves
     else:
         print('Все ходы повторяются. Ни один не записан.')
