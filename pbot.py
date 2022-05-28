@@ -7,6 +7,7 @@ import traceback
 import threading
 import sys
 import time
+import re
 
 token = open('token').read().replace('\n', '')
 longpoll = open('longpoll').read().replace('\n', '')
@@ -49,14 +50,11 @@ commands = make_table('commands.txt')
 permissions = open('./diplo/permissions.txt')
 moves = open('./diplo/moves.txt', 'rw')
 
-def connect():
-    
-
 def read_msg():
     """Reads a message from longpoll and processes it"""
     try:
         for event in vk_longpoll.listen():
-            if event.type == VkBotEventType.MESSAGE_NEW:
+            if event.type == VkBotEventType.MESSAGE_NEW:▶
                 msg = event.obj['message']
                 user = msg['peer_id']
                 print('Получено от:', user, '\b:', msg['text']) 
@@ -68,7 +66,7 @@ def read_msg():
                         user_command(msg['text'][1::], user)
     except socket.timeout:
         print('Нет связи с сервером. Повторное соединение через %d секунд.', timeout)
-        reconnect()
+        connect()
 
 def check_msg():
     try:
@@ -85,9 +83,9 @@ def check_msg():
                         user_command(msg['text'][1::], user)
     except socket.timeout:
         print('Нет связи с сервером. Повторное соединение через %d секунд.', timeout)
-        reconnect()
+        connect()
 
-def reconnect():
+def connect():
     global timeout
     timer = time.time()
     while (time.time() - timer) < timeout:
@@ -176,8 +174,22 @@ def console_command(uin):
         print(traceback.format_exc())
         
 def receiveMoves(user, *moves):
+    illegal = []
+    illegalmsg = "Не распознаны аргументы:", illegal
+    final = []
+    finalmsg = "Посланы ходы:", final
+    for move in moves:
+        move = move.lower()
+        if re.match(r'[a-z]\d{1,2}-[a-z]\d{1,2}-', move):
+            final.append(move)
+        else:
+            illegal.append(move)
+    if illegal:
+        send_msg(user, illegalmsg)
+    if final:
+        send_msg(user, finalmsg)
+        commitMoves(user, final)
     
-        
 def commitMoves(user, *moves):
     if user in permissions:
         print(user, 'запросил ходы:', moves)
