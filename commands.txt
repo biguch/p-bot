@@ -1,2 +1,3 @@
 help:send_localized(0, user)
 hello:send_localized(1, user)
+mov:receive_moves(user,u[1::])
