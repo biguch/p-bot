@@ -54,7 +54,7 @@ def read_msg():
     """Reads a message from longpoll and processes it"""
     try:
         for event in vk_longpoll.listen():
-            if event.type == VkBotEventType.MESSAGE_NEW:▶
+            if event.type == VkBotEventType.MESSAGE_NEW:
                 msg = event.obj['message']
                 user = msg['peer_id']
                 print('Получено от:', user, '\b:', msg['text']) 
@@ -169,7 +169,7 @@ def console_command(uin):
 
     except SystemExit:
         sys.exit()
-    except: navy encircle
+    except:
         print('АА СТОП ОШИБКА 00000')
         print(traceback.format_exc())
         
