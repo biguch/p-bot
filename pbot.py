@@ -25,12 +25,13 @@ def make_table(tabname):
     Arguments:
     tabname -- table name : str"""
     print('Читаем таблицу', tabname, '\b...')
-    with open(tabname) as tabfile:
-        tabfile = tabfile.read().splitlines()
+    with open(tabname) as tabf:
+        tabfile = tabf.read().splitlines()
+        tabf.close()
     tabout = dict()
     for line in tabfile:
         line.replace("\n", "")
-        key, response = line.split(':')
+        key, response = line.split(':', 1)
         try:
             key = int(key)
         except ValueError:
@@ -46,9 +47,8 @@ def make_table(tabname):
 
 localization = make_table('localization.txt')
 commands = make_table('commands.txt')
-
-permissions = open('./diplo/permissions.txt')
-moves = open('./diplo/moves.txt', 'rw')
+mfloc = './diplo/moves.txt'
+permissions = open('./diplo/permissions.txt').read()
 
 def read_msg():
     """Reads a message from longpoll and processes it"""
@@ -64,7 +64,7 @@ def read_msg():
                 else:
                     if (msg['text'][0] == '/'):
                         user_command(msg['text'][1::], user)
-    except socket.timeout:
+    except:
         print('Нет связи с сервером. Повторное соединение через %d секунд.', timeout)
         connect()
 
@@ -81,7 +81,7 @@ def check_msg():
                 else:
                     if (msg['text'][0] == '/'):
                         user_command(msg['text'][1::], user)
-    except socket.timeout:
+    except: 
         print('Нет связи с сервером. Повторное соединение через %d секунд.', timeout)
         connect()
 
@@ -162,7 +162,7 @@ def console_command(uin):
         #Force reconnect
         elif com == 'fr':
             print('Переподключаемся...')
-            reconnect()
+            connect()
         #Unknown command
         else:
             print('Неизвестная команда')
@@ -173,55 +173,73 @@ def console_command(uin):
         print('АА СТОП ОШИБКА 00000')
         print(traceback.format_exc())
         
-def receiveMoves(user, *moves):
+def receive_moves(user, moves):
+    print(moves)
     illegal = []
     illegalmsg = "Не распознаны аргументы:", illegal
     final = []
     finalmsg = "Посланы ходы:", final
     for move in moves:
+        print(move)
+        m1, m2 = move.split('-')
         move = move.lower()
-        if re.match(r'[a-z]\d{1,2}-[a-z]\d{1,2}-', move):
+        if re.match(r'([a-z]\d{1,2})-([a-z]\d{1,2})', move) and (m1 != m2):
             final.append(move)
         else:
             illegal.append(move)
     if illegal:
-        send_msg(user, illegalmsg)
+        write_msg(illegalmsg, user)
     if final:
-        send_msg(user, finalmsg)
-        commitMoves(user, final)
+        write_msg(finalmsg, user)
     
-def commitMoves(user, *moves):
-    if user in permissions:
-        print(user, 'запросил ходы:', moves)
+    if (str(user)+'\n') in permissions:
+        print(user, 'запросил ходы:', final)
         dumpMoves(user, moves)
     else:
-        print(user, 'нелегально запросил ходы:', moves)
+        print(user, 'нелегально запросил ходы:', final)
         
 def dumpMoves(user, moves):
+    usermoves = []
     print('Сбрасываем ходы в файл moves.txt')
-    users = moves.readlines()
-    for line in users:
-        if line.contains(user):
+    with open(mfloc, 'r') as movesfile:
+        usermoves = movesfile.read().splitlines()
+        userstr = str(user)
+        linum = 0
+        for i, line in enumerate(usermoves):
+            ltok = line.split(',')
+            if ltok[0] == userstr:
+                print('В файле moves.txt найден пользователь %s, добавляем ходы...' % user)
+                linum = i
+                for move in moves:
+                    if move in ltok: 
+                        continue
+                    else:
+                        line += move + ','
+                line+='\n'
+                usermoves[i] = line
+                break
+        else:
+            print('Пользователь %s не найден в файле moves.txt, добавляем в файл...'%userstr)
+            usermoves.append(userstr + ',')
+            line = usermoves[-1]
             for move in moves:
-                if line.contains(move):
-                    pass
-                    moves.replace(move, '')
-            line += moves
-            break
-        else: 
-            line += user+':'+moves
-    else:
-        print('Все ходы повторяются. Ни один не записан.')
-    print('Записали ходы:', moves, 'в файл moves.txt')
-    moves.writelines(users)
-                    
+                if move in line:
+                    continue
+                else:
+                    usermoves[-1] = line+move+','+'\n'
+            linum = -1 
+    movesfile.close()        
+    with open (mfloc, 'w') as movesfile:
+        pass
+        movesfile.writelines( usermoves )
+    print('Записали ходы:', moves, 'в файл moves.txt')            
+
 def getInput():
     """Reads console input"""
     uin = input().split()
     console_command(uin)
 
-print('Начинаем работу')
-check_msg()
+print('Начинаем работу...')
 inp = threading.Thread(target = read_msg, daemon = True)
 inp.start()
 print('Работаем, братья')
